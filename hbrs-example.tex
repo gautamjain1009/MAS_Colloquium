@@ -56,23 +56,19 @@ Auxiliary Task}
         \item The project further aims to investigate the following: 
         \begin{itemize}
             \item Can 3D lane detection improve the prediction of driving commands? 
-            \item Is the whole pipeline more interpretable by the introduction of auxiliary task.
-            \item Can multitask learning improve generalizaton? 
+            \item Is the whole pipeline more interpret-able by the introduction of auxiliary task.
+            \item Can multitask learning improve generalization? 
             \item Can task loss balancing favor the performance of the main task? 
         \end{itemize}
     \end{itemize}
 \end{frame}
 %---Motivation---%
-\begin{frame}{Motivation (1/6)}
-  \textbf{A Driving scenario in autonomous driving}
-  place a picture of the road scenario
-\end{frame}
 
 %%%%  next frame %%%
-\begin{frame}{Motivation (2/6)}
+\begin{frame}{Motivation (1/5)}
   \textbf{End-to-End Autonomous Driving}
   \begin{itemize}
-    \item Research done in autonomous driving is focused on two approaches \footcite{DBLP:journals/corr/abs-2003-06404}
+    \item Research done in autonomous driving is focused on two approaches
         \begin{itemize}
             \item Modular 
             \item End-to-end 
@@ -93,27 +89,77 @@ Auxiliary Task}
 \end{frame}
 
 %--- Next Frame ---%
-\begin{frame}{Motivation (2/6)}
-  \textbf{Multi task Learning vs Auxiliary Learning}
+\begin{frame}{Motivation (2/5)}
+  \textbf{A Driving Scenario in Autonomous Driving}
+  \begin{figure}[H]
+     \centering
+     
+\begin{subfigure}{\textwidth}
+\includegraphics[width=0.6\linewidth, height=4cm]{images/MTL_aux.png} 
+\label{fig:subim1}
+\end{subfigure}
 
-  \begin{itemize}
-      \item By definition, both multi-task learning and auxiliary learning is the same. 
-      \item In both cases we learn for multiple tasks by the sharing the same feature representation
-  \end{itemize}
+\caption{Tasks to learn in a scene \footcite{tesla} }
+\label{fig:image2}
+\end{figure}
 \end{frame}
 
 %--- Next Frame ---%
-\begin{frame}{Motivation (3/6)}
-  \textbf{Challenges in end-to-end autonomous driving}
+\begin{frame}{Motivation (3/5)}
+  \textbf{Multi-task Learning vs Auxiliary Learning}
+
+  \begin{itemize}
+      \item By definition, both multi-task learning and auxiliary learning is the same. 
+      \item In both cases we learn for multiple tasks by the sharing the same feature representation.
+      \item The difference is that in auxiliary learning we give importance to the main task while utilizing the training signals from the correlated auxiliary tasks. 
+  \end{itemize}
+   
+\end{frame}
+
+%--- Next Frame ---%
+
+   
+\begin{frame}{Motivation (4/5)}
+  \textbf{Challenges in Multi-task Learning for End-to-End Autonomous Driving
+}
 
   \begin{itemize}
       \item Causal confusion
       \item Distribution shift 
       \item Selection of auxiliary tasks
+      \item Simulation can not cover all the scenarios 
+      \item Selection of a unified feature extractor 
+      \item Task loss balancing
   \end{itemize}
 \end{frame}
 
+%--- Next Frame ---%
+\begin{frame}{Motivation (5/5)}
+\textbf{Multi-task Learning in Autonomous Driving}
+   \begin{itemize}
+        \item In a driving scenario for an autonomous car to make decision we need to learn for tasks like road sign, moving objects, traffic lights and more.
+        \item Generally these auxiliary tasks are correlated with the main task of prediction of driving commands.
+       \item Thus learning for auxiliary tasks  along with the main task makes the driving driving policy more robust and interpret-able.
+       \item Multi-task learning is an important component of the end-to-end autonomous driving.
+   \end{itemize}
+\end{frame}
 
+\begin{frame}{Lane Detection in Autonomous Driving}
+    \begin{itemize}
+        \item Lane line detection is the most necessary and safety critical tasks in autonomous driving.
+        \item In this work we have used 3D Lane detection as an auxiliary task along with the prediction of the driving commands.
+    \end{itemize}
+    
+    \textbf{Monocular 2D Lane Detection}
+    \begin{itemize}
+        \item 
+    \end{itemize}
+    
+    \textbf{Monocular 3D Lane Detection}
+    \begin{itemize}
+        \item 
+    \end{itemize}
+\end{frame}
 
 \begin{frame}
 \printbibliography
