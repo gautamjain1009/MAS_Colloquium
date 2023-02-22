@@ -78,10 +78,10 @@ Auxiliary Task}
     \begin{figure}[H]
      \centering
      
-\begin{subfigure}{\textwidth}
+%\begin{subfigure}{\textwidth}
 \includegraphics[width=0.4\linewidth, height=3.2cm]{images/end-modular.png} 
 \label{fig:subim1}
-\end{subfigure}
+%\end{subfigure}
 
 \caption{Modular and end-end pipelines for autonomous driving\footcite{DBLP:journals/corr/abs-2003-06404}}
 \label{fig:image2}
@@ -94,10 +94,10 @@ Auxiliary Task}
   \begin{figure}[H]
      \centering
      
-\begin{subfigure}{\textwidth}
+%\begin{subfigure}{\textwidth}
 \includegraphics[width=0.6\linewidth, height=4cm]{images/MTL_aux.png} 
 \label{fig:subim1}
-\end{subfigure}
+%\end{subfigure}
 
 \caption{Tasks to learn in a scene \footcite{tesla} }
 \label{fig:image2}
@@ -146,20 +146,130 @@ Auxiliary Task}
 
 \begin{frame}{Lane Detection in Autonomous Driving}
     \begin{itemize}
-        \item Lane line detection is the most necessary and safety critical tasks in autonomous driving.
         \item In this work we have used 3D Lane detection as an auxiliary task along with the prediction of the driving commands.
     \end{itemize}
     
     \textbf{Monocular 2D Lane Detection}
     \begin{itemize}
-        \item 
+        \item Takes an RGB image from a front facing camera mounted on autonomous vehicle and provides the set of pixels which represents lane lines. 
+        \item Both input and output are represented in the image space ie. why these approaches are called 2D
+        \item The basic assumption is that the ground plane is flat.
+        
     \end{itemize}
     
     \textbf{Monocular 3D Lane Detection}
     \begin{itemize}
-        \item 
+        \item In the driving scenarios where the roads are with different allevation.
+        \item We need to obtain 3D points of the lanes to perform accurate motion planning.
+        \item Provides real world 3D coordinates of the lane lines with respect to a camera coordinate system.
     \end{itemize}
 \end{frame}
+%%%%%%%%%%%%%%%%%%%
+\begin{frame}{3D Lane Geometry}
+    \begin{figure}[H]
+     \centering
+     
+%\begin{subfigure}{\textwidth}
+\includegraphics[width=0.6\linewidth, height=4cm]{images/3d_lane_geometry.png} 
+\label{fig:subim1}
+%\end{subfigure}
+
+\caption{Geometric representation of lane point in 3D world space, image plane and virtual top view \footcite{DBLP:journals/corr/abs-2112-15351} }
+\label{fig:image2}
+\end{figure}
+\end{frame}
+% ----- next frame ------%
+\begin{frame}{Inspiration for Proposed 3D Lane Detector (1/2)}
+\textbf{Approach 1: Gen-LaneNet}
+
+ \begin{figure}[H]
+     \centering
+     
+%\begin{subfigure}{\textwidth}
+\includegraphics[width=0.8\linewidth, height=4cm]{images/genLanenet.png} 
+\label{fig:subim1}
+%\end{subfigure}
+
+\caption{Gen-LaneNet pipeline \footcite{guo2020gen} }
+\label{fig:image2}
+\end{figure}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{frame}{Inspiration for Proposed 3D Lane Detector (2/2)}
+\textbf{Approach 2: Semi-local 3D-LaneNet}
+
+ \begin{figure}[H]
+     \centering
+     
+%\begin{subfigure}{\textwidth}
+\includegraphics[width=0.8\linewidth, height=4cm]{images/3DLaneNET++.png} 
+\label{fig:subim1}
+%\end{subfigure}
+
+\caption{Semi-local 3D LaneNet pipeline \footcite{DBLP:journals/corr/abs-2011-01535} }
+\label{fig:image2}
+\end{figure}
+\end{frame}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}{Pros and Cons of Previous Work (1/2)}
+    \textbf{Gen-LaneNet}
+    
+    \begin{itemize}
+        \item Dual stage pipeline is flexible in terms of replacing the first stage by better 2D lane detection algorithms. 
+        \item Lane detection and prediction of 3D geometry are treated as different tasks. 
+        \item Introduced a generalized virtual top view for the correction of points in top view when a ego vehicle moves uphill or downhill.
+        \item Can not handle different topologies when the lane lines are perpendicular to the ego vehicle.
+        \item Can not generalize well with different cameras.
+    \end{itemize}
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}{Pros and Cons of Previous Work (2/2)}
+    \textbf{Semi-local 3D LaneNet}
+    \begin{itemize}
+        \item Prediction of 3D lane lines are done semi-locally and in an anchor-less manner. 
+        \item BEV mask is broken into tiles and each tile is responsible for contributing one point to lane curve.
+        \item Can generalize well to different topologies.
+    \end{itemize}
+
+
+\textbf{Takeaway}
+\begin{itemize}
+    \item We combine the effectiveness of dual stage pipeline proposed by Gen-LaneNet and semi-local anchor-less representation of the 3D lane curves  
+\end{itemize}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}{Proposed Dual Stage Semi-local Anchor-less 3D Lane Detector}
+
+
+ \begin{figure}[H]
+     \centering
+     
+%\begin{subfigure}{\textwidth}
+\includegraphics[width=0.8\linewidth, height=4.5cm]{images/3DlaneAUXNet.png} 
+\label{fig:subim1}
+%\end{subfigure}
+
+\caption{Dual stage semi-local anchor-less 3D lane detection pipeline }
+\label{fig:image2}
+\end{figure}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% Stage 1: Binary Lane Segmentation
+%% s-1 DIAG... of pipeline 
+%% s-2 mention why increased efficated RESNET ---- >  SCNN, RESA ---> decoders
+%% s-3 Traning details and datasets used
+%% s-4 Training Targets and Loss functions used
+%% s-5 QA and EMP Results with cross entropy
+%% s-6 QA and EMP Results after task loss balancing 
+%% s-7 QA and EMP Results with combined GenLaneNet 
+
+
 
 \begin{frame}
 \printbibliography
