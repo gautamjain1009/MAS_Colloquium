@@ -714,11 +714,138 @@ the spatial size of the image tensors and $n_{c}$ represents the number of class
 \begin{frame}{Regression Pathway}    
     \begin{itemize}
         \item The BEV segmentation mask is normalized.
-        \item Resulting BEV segmentation mask is decimated into grids $G_{WxH}$, which are non overlappig patches called tiles. 
+        \item Resulting BEV segmentation mask is decimated into grids $G_{WxH}$, which are non overlappig patches called tiles and passed through series of convolutional layers.
         \item Every tile contributes one point to the 3D lane curve.
         \item For each tile we try to approximate a straight line segment assuming it intersects a tile.
-        \item 
+        \item For each tile the regression pathway regresses, $\widetilde{r_{ij}}$ the lateral offset distance relative to tile center, line angle $\widetilde{\phi_{ij}}$, $\triangle{\widetilde{z_{ij}}}$ and a binary classification score $\widetilde{c_{ij}}$ 
     \end{itemize}
     
 \end{frame}
+
+\begin{frame}{Ground-truth Creation: Regression Pathway}
+    \begin{itemize}
+        \item  Ground-truth for angle and distance offsets are computed by projecting ground-truth 3D lane points on the road plane in BEV space.
+        \item Projected BEV image is decimated into tiles.
+        \item Line approximation algorithms like Hough Transform is used to compute $r_{ij}$ and $\phi_{ij}$.
+        \item This is done for all decimated tiles
+        \item To represent the line angle distance offsets with respect to the global origin of the image, Hesse normal form is used.
+    \end{itemize}
+
+     
+\end{frame}
+
+\begin{frame}{Ground-truth Creation: Regression Pathway}
+    \begin{figure}[h]
+      \caption{Height offset is calculated by considering two scenarios.}
+        \centering
+        % \begin{subfigure}{1\textwidth}
+        \includegraphics[scale=0.2]{images/delta_z_uphill.png} 
+        % \hfill
+        % \caption{\cite{guo2020gen}}
+        % \label{fig:subim1}
+        % \end{subfigure}
+        % \begin{subfigure}{1\textwidth}
+        \includegraphics[scale=0.2]{images/delat_z_downhill.png}
+        % \caption{\cite{guo2020gen}}
+        % \label{fig:subim2}
+        % \end{subfigure}
+        \end{figure}
+\end{frame}
+
+\begin{frame}{Loss Functions: Regression Pathway}
+    \begin{itemize}
+        \item L1 loss is used to train position and angle offset
+    \end{itemize}
+    
+    \begin{equation}
+                L^{Offsets}_{i,j} = \parallel \widetilde{r_{i,j}} - r_{i,j} \parallel_{1} + \parallel \triangle{\widetilde{z_{i,j}}} - \triangle{z_{i,j}} \parallel_{1} 
+     \end{equation}
+
+    \begin{itemize}
+        \item Prediction of $\widetilde{\phi}_{ij}$ is carried out by representing it in the form of histogram of $N_{\alpha}$ bins, where $\alpha = \left\{\frac{2\pi}{N_{\alpha} } \cdot i \right\}^{N_{\alpha}}_{i =1} $.
+        \item Ground-truth probability of each bin is calculated via $ p^{\alpha} = [1 - \vert \frac{2\pi}{N_{\alpha}} \cdot i  - \phi  \vert \ \frac{2\pi}{N_{\alpha}} ]_{+}$
+        \item $\triangle^{\alpha}$ is learned to counter the bin classification offsets.
+        \item Angle loss is the combination of classification and regression losses.
+    \end{itemize}
+
+    \begin{equation}
+                 L_{ij}^{Offsets} = \sum_{\alpha=1}^{N_{\alpha}}[p^{\alpha}_{ij} \cdot log \tilde{p^{\alpha}_{ij}} + (1 - p^{\alpha}_{ij}) \cdot log(1 - \tilde{p^{\alpha}_{ij}}) + \delta^{\alpha}_{ij} \parallel   \tilde{\triangle^{\alpha}_{ij}} - \triangle^{\alpha}_{ij} \parallel_{1} ] 
+             \end{equation}
+    
+\end{frame}
+
+\begin{frame}{Loss Functions: Regression Pathway}
+    \begin{itemize}
+        \item Lane tile probability is traned via binary cross entropy loss.
+    \end{itemize}
+    \begin{equation}
+                 L_{ij}^{score} = c_{ij} \cdot log \widetilde{c_{ij}} + (1 - c_{ij}) \cdot log
+                    (1-  \widetilde{c_{ij}})
+             \end{equation}
+
+    \begin{itemize}
+        \item Overall tile loss is sum of all above mentioned losses for all tiles in the grid.
+    \end{itemize}
+
+     \begin{equation}
+                L^{tiles} = \sum_{i,j \in WxH}(L^{score}_{ij} +c_{ij} \cdot L^{angle}_{ij} + c_{ij} \cdot L^{offsets}_{ij}  )
+            \end{equation}
+    
+\end{frame}
+
+\begin{frame}{Embedding Pathway}
+\begin{itemize}
+    \item The normalized BEV mask is passed through series of $1x1$ convolutional layers to learn global lane embeddings.
+    \item For each tile an embedding vector $f_{ij}$ is learned which is governed by a discriminative push-pull loss.
+    \item Mean shift clustering is performed on the learnt feature embeddinds to complete the lane segments to complete lane curve.
+\end{itemize}
+\end{frame}
+
+\begin{frame}{Loss functions: Embedding Pathway}
+\begin{itemize}
+    \item Discriminative push-pull loss make sures that embedding vectors that belong to same lane reside close to each other in embedding space.
+    \item Embedding vectors which belong to different lane stay apart in embedding space. 
+\end{itemize}
+ \begin{equation}
+                L^{embedding} = L^{pull} + L^{push}
+            \end{equation}
+             
+             \begin{equation}
+                     L^{pull} = \frac{1}{C} \sum^{C}_{c=1}\frac{1}{N_{c}} \sum_{ij \in WXH}[ \delta_{ij}^{c} \parallel \mu_{c} - f_{ij}  \parallel - \triangle_{pull} ]_{+}^{2} 
+             \end{equation}
+             
+             \begin{equation}
+                 L^{push} =  \frac{1}{C(C -1)} \sum^{C}_{C_{A=1}, C_{B=1}, C_{A} \not =C_{B}}[ \triangle_{push} - \parallel \mu_{CA} - \mu_{CB}\parallel ]_{+}^{2}
+             \end{equation}
+    \tiny
+    where, $C$ is the number of lanes, $N_{c}$ number of tiles that belong to lane c, $\delta_{ij}^{c}$ denotes if tile $i,j$ belongs to lane c, $\mu_{c} = \frac{1}{N_{c}} \sum_{ij \in WXH } \delta^{c}_{ij} \cdot f_{ij}$ are mean of embedding vectors that belongs to lane $c$. $\triangle_{pull}$ and $\triangle_{pull}$ is the maximum and minimum distance between the clusters.
+\end{frame}
+
+
+\begin{frame}{Final Output}
+    \begin{itemize}
+        \item Mean shift clustering is performed on the learnt feature embedding to assign clusters to each tile.
+        \item Predicted offsets and angles are converted into 3D lane line points by converting them from polar to cartesian coordinates.
+        \item Resulting points are transformed from BEV to Camera coordinate system by rotating by  $-\theta_{cam}$ and subtracting by $h_{cam}$
+    \end{itemize}
+
+    \begin{equation}
+            \begin{bmatrix}\widetilde{x_{ij}}  \\\widetilde{y_{ij}} \\ \widetilde{z_{ij}}  \end{bmatrix} = \begin{bmatrix}1 & 0 & 0  \\ 0  & cos(\theta_{cam}) & sin(\theta_{cam}) \\ 0  & -sin(\theta_{cam}) & cos(\theta_{cam}) \end{bmatrix} \cdot \begin{bmatrix}\widetilde{r_{ij}} \cdot cos(\widetilde{\phi_{ij}})  \\\widetilde{r_{ij}} \cdot sin(\widetilde{\phi_{ij}})  \\ \widetilde{\triangle z_{ij}} - h_{cam} \end{bmatrix}
+        \end{equation}
+\end{frame}
+
+\begin{frame}{Training Challenges Encountered: Proposed Pipeline }
+    
+\end{frame}
+
+\begin{frame}{Problems: Proposed Pipeline}
+
+    
+\end{frame}
+
+\begin{frame}{Future Work}
+    
+\end{frame}
+
+
 \end{document}
