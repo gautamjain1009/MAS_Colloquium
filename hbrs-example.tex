@@ -269,9 +269,456 @@ Auxiliary Task}
 %% s-6 QA and EMP Results after task loss balancing 
 %% s-7 QA and EMP Results with combined GenLaneNet 
 
+\begin{frame}{Stage 1: Binary Lane Segmentation}
+    \begin{itemize}
+        \item Subtask of 2D lane segmentation
+        \item Instead of predicting multiple labels for different lanes, we obtain binary masks for the lane lines in the image.
+    \end{itemize}
+
+\begin{figure}[H]
+     \centering
+     
+%\begin{subfigure}{\textwidth}
+\includegraphics[width=0.4\linewidth, height=3cm]{images/2dlane_pipleline.png} 
+\label{fig:subim1}
+%\end{subfigure}
+
+\caption{2D Binary Lane segmentation Pipeline \footcite{Tusimple} }
+\label{fig:image2}
+\end{figure}
+\end{frame}
+%%%%%%%%%%%%%%%%%%%%%
+
+\begin{frame}{Selection of Network Architecture for Binary Lane Segmentation (1/2)}
+    \textbf{Encoder}
+    \begin{itemize}
+        \item ResNet18 and ResNet50\footcite{} are used as the main feature extractor.
+        \item Dilated convolutions are used in the last layers of the feature extractor to increase the effective receptive field.
+    \end{itemize}
+
+    \textbf{Feature Aggregator}
+    \begin{itemize}
+        \item Features aggregator modules proposed by SCNN\footnote{} and RESA\footnote{} are utilized.
+        \item Both feature extractor are tailored for 2D lane segmentation.
+    \end{itemize}
+\end{frame}
+
+\begin{frame}{Selection of Network Architecture for Binary Lane Segmentation (2/2)}
+    \textbf{Decoder}
+    \begin{itemize}
+        \item Simple decoder proposed by SCNN \footcite{}, which used bi-linear interpolation to upsample the feature maps.
+        \item Bilateral Upsampling decoder (BUSD) propsed by RESA\footcite{}
+    \end{itemize}
 
 
-\begin{frame}
-\printbibliography
+    2D binary lane segmentation is trained via mix and match of the above mentioned encoder, decoder and feature aggregator modules.
+
+\end{frame}
+%%%%%%%%%%%%%%%%%%%%%%5
+
+\begin{frame}{Loss Computation for 2D Binary Lane Segmentation}
+    \begin{figure}[H]
+     \centering
+     
+%\begin{subfigure}{\textwidth}
+\includegraphics[width=0.6\linewidth, height=4cm]{images/2d_dataflow_loss_computation.jpg} 
+\label{fig:subim1}
+%\end{subfigure}
+
+\caption{ Data flow for loss computation for 2D binary lane segmentation pipeline. w and h represents
+the spatial size of the image tensors and $n_{c}$ represents the number of classes\footcite{Tusimple}}
+\label{fig:image2}
+\end{figure}
+\end{frame}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}{Loss Functions: 2D Binary Lane Segmentation}
+    \textbf{Cross Entropy Loss}
+    \begin{equation}
+        L_{CCE} = -\frac{1}{N}\sum_{i=1}^{N} \sum^{M}_{j=1}y_{i,j}\cdot log(p_{i,j})
+        \end{equation}
+        where $p_{i,j}$ is the prediction for each class and $y_{i,j}$ is the target value for each class. N and M are the number of rows and columns.
+    
+    \textbf{Dice Loss}
+
+    \begin{equation}
+            DC = \frac{2TP}{2TP + FP + FN} = \frac{2|X \cap Y|}{|X| + |Y|}
+        \end{equation}
+    where $TP$ ,$FP$ and $FN$ are the true positives, false positives and false negatives.  
+        
+        \begin{equation}
+            L_{dice} = 1 - DSC
+        \end{equation}
+    
+\end{frame}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}{Loss Functions: 2D Binary Lane Segmentation}
+
+\textbf{Focal Loss}
+
+\begin{equation}
+            Cross Entropy = - \sum^{n}_{i=1}Y_{i}log(p_{i})
+        \end{equation}
+        where $Y$ and $p$ represents the is the ground-truth label and the predicted probability.
+        
+        \begin{equation}
+            Focal Loss = - \sum^{i=n}_{i=1} \alpha_{i}(1-p_{i})^{\gamma} log_{b}(p_{i})
+        \end{equation}
+        
+         when $\gamma = 0$, Focal Loss is equal to Cross Entropy Loss.
+\end{frame}
+
+\begin{frame}{Datasets Used}
+
+    \textbf{Datasets Used}
+    \begin{itemize}
+        \item TuSimple\footcite{} - simple dataset consists of normal highway driving.
+        \item CULane\footcite{} - complex dataset consists urban driving scenarios with different weather conditions.
+        \item Apollo Synthetic Dataset (Sim3D)\footcite{guo2020gen} - synthetic 3D lane detection dataset.
+    \end{itemize}
+\end{frame}
+
+\begin{frame}{Evaluation Metric Used}
+    
+    \begin{itemize}
+        \item IoU (Intersection-over-union) or Jaccard index is used to evaluate the trained models.
+    \end{itemize}
+    \begin{figure}[H]
+     \centering
+     
+%\begin{subfigure}{\textwidth}
+\includegraphics[width=0.5\linewidth, height=3cm]{images/IOU.png} 
+\label{fig:subim1}
+%\end{subfigure}
+
+\caption{ (IoU)Intersection-Over-Union\footcite{IOU}}
+\label{fig:image2}
+\end{figure}
+\end{frame}
+
+%%%%%%%%%%%%%
+\begin{frame}{Results for Binary Lane Segmentation: Cross Entropy Loss}
+    \begin{itemize}
+        \item Initially models are trained on CULane , TuSimple and Apollo Synthetic dataset (sim3D) with Cross Entropy loss as our objective function. 
+    \end{itemize}
+
+    \begin{table}[h!]
+    \caption{Results for binary lane segmentation using Cross Entropy loss as the loss function}
+    \centering
+    \begin{tabular}{|l|l|l|}
+    \hline
+        \textbf{Method} & \textbf{IoU} & \textbf{FPS} \\ \hline
+        SCNN(Res18+TuSimple) & 54.81 & $\approx$ \textbf{70}  \\ \hline
+        RESA(Res18+TuSimple)  & 56.73 & $\approx$ 50 \\\hline
+        SCNN(Res18+CUlane)  & 38.1 & $\approx$ 70 \\ \hline
+        RESA(Res18+CUlane)& 43.23 &  $\approx$ 45\\\hline
+        SCNN(Res18+sim3d) & 44.12 & $\approx$ 70 \\ \hline
+        RESA(Res18+sim3d) & 71.79 & $\approx$ 45 \\ \hline
+        RESA(Res50+sim3d) & \textbf{74.11} & $\approx$ 40 \\ \hline
+        
+    \end{tabular}
+\end{table}
+\end{frame}
+
+%%%%%%%%%%%%%%%
+\begin{frame}{Qualitative Results Binary Lane Segmentation: CE Loss}
+\begin{columns}[t]
+        \column{.5\textwidth}
+        \includegraphics[width=\columnwidth,height= 2cm]{images/SCNN_res_culane.png}
+        \centering
+        \captionof{(a)}{SCNN (Res18+CULane) \footcite{}}
+        \includegraphics[width=\columnwidth,height= 2cm]{images/SCNN_res_tusimple.png}
+        \captionof{(b)}{SCNN (Res18 + TuSimple) \footcite{}}
+        \column{.5\textwidth}
+        \includegraphics[width=\columnwidth,height= 2cm]{images/Resa_r18_sim3d.png}
+        \centering
+        \captionof{(c)}{RESA (Res18 + sim3d) \footcite{}}
+    \end{columns}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%%
+
+\begin{frame}{Addressing the Class Imbalance Problem}
+\begin{itemize}
+    \item Cross Entropy considers the loss globally not locally. 
+    \item Statistical distribution of the labels affect overall loss. 
+    \item Occurrence of one class overpowered the other leads to class imbalance problem.
+    \item Number of pixels occupied by lanes are lesser than the background. 
+    \item To counter this, weighted CE Loss, focal and dice loss is used. 
+\end{itemize}
+
+    \begin{table}[h!]
+    \caption{Quantitative results for binary lane segmentation trained on sim3d dataset using Cross Entropy Loss, Focal Loss and Dice Loss}
+    \centering
+    \begin{tabular}{|l|l|l|}
+    \hline
+        \textbf{Method} & \textbf{IoU} & \textbf{FPS} \\ \hline
+        RESA(Res18+Cross Entropy)  & 71.79 & $\approx$ 45 \\ \hline
+        SCNN(Res18+Cross Entropy) & 44.12 & $\approx$ \textbf{70}  \\ \hline
+        RESA(Res50+Cross Entropy)  & 74.11 & $\approx$ 40  \\ \hline
+
+        RESA(Res18+Dice Loss) & 82.57 & $\approx$ 50 \\\hline
+        RESA(Res50+Dice Loss) & \textbf{83.33} & $\approx$ 50 \\\hline
+    \end{tabular}
+\end{table}
+\end{frame}
+
+%%%% Qulitative results for EGO vehicle with focal and dice loss on sim3d 
+\begin{frame}{After Addressing The Class Imbalance Problem (1/4)}
+\begin{columns}[t]
+        \column{.5\textwidth}
+        \includegraphics[width=\columnwidth,height= 2cm]{images/binseg_ce_resa.png}
+        \centering
+        \captionof{(a)}{ RESA(Res18+Cross Entropy Loss) \footcite{}}
+        \includegraphics[width=\columnwidth,height= 2cm]{images/binseg_dice_resa.png}
+        \captionof{(b)}{RESA(Res18+Dice Loss) \footcite{}}
+        \column{.5\textwidth}
+        \includegraphics[width=\columnwidth,height= 2cm]{images/binseg_focal_resa.png}
+        \centering
+        \captionof{(c)}{ RESA(Res18+Focal Loss)\footcite{}}
+    \end{columns}
+
+\end{frame}
+%%%%% Qualitative results for full lanes with focal and dice loss on sim3d
+\begin{frame}{After Addressing The Class Imbalance Problem (2/4)}
+\begin{columns}[t]
+        \column{.5\textwidth}
+        \includegraphics[width=\columnwidth,height= 2cm]{images/full_res18_scnn_focal.png}
+        \centering
+        \captionof{(a)}{ SCNN(Res18+Focal Loss) \footcite{}}
+        \includegraphics[width=\columnwidth,height= 2cm]{images/Resa_r18_full_dice.png}
+        \captionof{(b)}{RESA(Res18+Dice Loss) \footcite{}}
+        \column{.5\textwidth}
+        \includegraphics[width=\columnwidth,height= 2cm]{images/Resa_r50_full_dice.png}
+        \centering
+        \captionof{(c)}{ RESA(Res18+Focal Loss)\footcite{}}
+    \end{columns}
+
+\end{frame}
+
+%%% Table 
+\begin{frame}{After Addressing The Class Imbalance Problem (3/4)}
+ \begin{table}[h]
+    \caption{Quantitative results for binary lane segmentation on sim3D dataset for all the lanes present in the scene for all the lanes present in the scene.}
+    \centering
+    \begin{tabular}{|l|l|l|}
+    \hline
+        \textbf{Method} & \textbf{IoU} & \textbf{FPS} \\ \hline
+        SCNN(Res18+Focal Loss)& 44.01 & $\approx$ \textbf{70} \\\hline
+        RESA(Res18+Dice Loss) & 86.56 & $\approx$ 55 \\\hline
+        RESA(Res50+Dice Loss) & \textbf{86.67} & $\approx$ 50 \\\hline
+    \end{tabular}
+\end{table}
+    
+\end{frame}
+%%%% Compare the IOU curves 
+
+\begin{frame}{After Addressing The Class Imbalance Problem(4/4)}
+
+ % Iou curves for binary lane segmentation trained on sim3d dataset with CE loss, focal loss and dice loss for ego lane and all lanes.
+
+% \begin{columns}[t]
+%         \column{.5\textwidth}
+%         \includegraphics[width=0.5\columnwidth,height= 2cm]{images/change1.png}
+%         \centering
+%         \captionof{(a)}{ SCNN(Res18+Focal Loss)}
+%         \includegraphics[width=0.5\columnwidth,height= 2cm]{images/change2.png}
+%         \captionof{(b)}{RESA(Res18+Dice Loss)}
+%         \column{.5\textwidth}
+%     \end{columns}
+% \begin{figure}[H]
+%      \centering
+     
+% %\begin{subfigure}{\textwidth}
+% \includegraphics[width=0.4\linewidth, height=3cm]{images/change2.png} 
+% \label{fig:subim1}
+% %\end{subfigure}
+
+% \includegraphics[width=0.4\linewidth, height=3cm]{images/change1.png} 
+% \label{fig:subim1}
+% \caption{ (IoU)Intersection-Over-Union}
+% \label{fig:image2}
+% \end{figure}
+
+% \begin{columns}[t]
+%     \column{.1\textwidth}
+%         %\begin{center}
+%             \includegraphics[scale=0.2]{images/change2.png}
+%         %\end{center}
+%     \column{.1\texwidth}
+%         %\begin{center}
+%              \includegraphics[scale=0.2]{images/change1.png} 
+%         %\end{center}
+% \end{columns}
+
+
+\begin{figure}
+   \includegraphics[scale=0.2]{images/change2.png}
+   \hfill
+   \includegraphics[scale=0.2]{images/change1.png}
+\end{figure}
+
+\end{frame}
+%%%%%%%%%%5
+
+
+\begin{frame}{Results: Gen-LaneNet Trained with Best Binary Lane Segmentation Model }
+\begin{itemize}
+    \item To prove the flexibility and efficacy of the dual stage approach proposed by Gen-LaneNet.
+    \item The best binary segmentation model is used in the first step of the pipeline. 
+    \item First stage of the pipeline is frozen.
+    \item The whole pipeline is trained on Apollo Synthetic dataset (Sim3D).
+    \item The dataset is divided into three splits: balanced, rarely observed and visual variation scenes.
+\end{itemize}
+\end{frame}
+
+%%%%%%%%%%%%%%
+
+\begin{frame}{Comparison with SOA: Balanced Scenes}
+\begin{table}[h]
+    \small
+    \addtolength{\tabcolsep}{-1pt}
+    \begin{center}
+    \caption{Comparison between state of the art 3D lane detection approaches and the GenLaneNet trained with complex binary lane segmentation architecture on balanced scenes from sim3D , near range (0-40m) and far range (40-100m)}
+    \begin{tabular}{|p{0.29\linewidth}|p{0.09\linewidth}|p{0.09\linewidth}|p{0.09\linewidth}|p{0.09\linewidth}|p{0.09\linewidth}|p{0.09\linewidth}|}
+    \hline
+        \textbf{Method} & \textbf{AP} & \textbf{F-Score} & \textbf{x error near(m)} & \textbf{x error far(m)} & \textbf{z error near(m)} & \textbf{z error far(m)} \\ \hline
+        Gen-LaneNet & 90.1 & 88.1 & 0.061 & 0.496 & 0.012 & 0.214 \\ \hline
+        3D LaneNet & 89.3 & 86.4 & 0.068 & 0.477 & 0.015 & \textbf{0.202} \\ \hline
+        CLGo & \textbf{94.2} &\textbf{ 91.9} & 0.061 & \textbf{0.361} & 0.029 & 0.250 \\ \hline
+        3D-LaneNet(1/att)  &  93.2 & 91.0 & 0.082 & 0.439 & \textbf{0.011} & 0.242 \\ \hline
+        Gen-LaneNet(1/att)& 92.4 & 90.3 & 0.080 & 0.473 & \textbf{0.011} & 0.247 \\ \hline
+        Gen-LaneNet(RESA+Res18) & 91.8 & 89.7 & \textbf{0.06} & 0.466 & 0.0114 & 0.24 \\ \hline
+        Gen-LaneNet(RESA+Res50) & 92.2 & 90.2 &\textbf{ 0.06} & 0.461 & 0.0122 & 0.24 \\ \hline
+    \end{tabular}
+    \end{center}
+    \end{table}
+
+\end{frame}
+
+%%%%%%
+%qualitative results
+
+\begin{frame}{Qualitative Results: Balanced Scenes}
+ \begin{figure}[h]
+      \caption{Qualitative results of the trained GenLaneNet trained with complex binary lane segmentation architecture on balanced scenes from sim3D dataset \footcite{guo2020gen} for uphill and downhill scenario. The ground-truth lines are color coded in red and the predicted lanes in blue. }
+        \centering 
+       \includegraphics[scale=0.2]{images/uphill_standard.png}
+       % \caption{(a)}
+       \hfill
+       \includegraphics[scale=0.2]{images/downhill_standard.png}
+        % \caption((b))
+        \end{figure}
+    
+\end{frame}
+%%%%%%%
+%% table 
+\begin{frame}{Comparison with SOA: Rarely Observed Scenes}
+     \begin{table}[h]
+     \small
+    \centering
+    \caption{Comparison between state of the art 3D lane detection approaches and the GenLaneNet trained with complex binary lane segmentation architecture on rarely observed scenes from sim3D, near range (0-40m) and far range (40-100m) }
+    \begin{tabular}{|p{0.29\linewidth}|p{0.09\linewidth}|p{0.09\linewidth}|p{0.09\linewidth}|p{0.09\linewidth}|p{0.09\linewidth}|p{0.09\linewidth}|}
+    \hline
+        \textbf{Method} & \textbf{AP} & \textbf{F-Score} & \textbf{x error near(m)} & \textbf{x error far(m)} & \textbf{z error near(m)} & \textbf{z error far(m)} \\ \hline
+        Gen-LaneNet & 79.0 & 78.0 & 0.139 & 0.903 & 0.030 & 0.539 \\ \hline
+        3D LaneNet & 74.6 & 72.0 & 0.166 & 0.855 & 0.039 &\textbf{ 0.521} \\ \hline
+        CLGo &\textbf{ 88.3} &\textbf{ 86.1} & 0.147 & \textbf{0.735} & 0.071 & 0.609 \\ \hline
+        3D-LaneNet(1/att)& 85.8 & 84.1 & 0.289 & 0.925 &\textbf{ 0.025} & 0.625 \\ \hline
+        Gen-LaneNet(1/att)& 83.2 & 81.7 & 0.283 & 0.915 & 0.028 & 0.653 \\ \hline
+        Gen-LaneNet(RESA+Res18) &  84.9 & 83.2 &\textbf{ 0.135} & 0.886 & 0.0308 & 0.607 \\ \hline
+        Gen-LaneNet(RESA+Res50) & 83.7 & 82.3 & 0.14 & 0.919 & 0.0283 & 0.604 \\ \hline
+    \end{tabular}
+\end{table}
+\end{frame}
+%%%%
+%%%% qualitative results 
+\begin{frame}{Qualitative Results: Rarely Observed Scenes}
+
+ \begin{figure}[h]
+      \caption{Qualitative results of the GenLaneNet trained with complex binary lane segmentation architecture on rarely observed scenes from sim3D dataset\footcite{guo2020gen} for uphill and downhill scenario. The ground-truth lines are color-coded in red and the predicted lanes in blue.}
+        \centering
+        
+        \includegraphics[scale=0.2]{images/uphill_rare.png} 
+        \hfill
+        \includegraphics[scale=0.2]{images/downhill_rare.png}
+       
+        \end{figure}
+    
+\end{frame}
+%% table 
+\begin{frame}{Comparison with SOA: Visual Variation Scenes}
+      \begin{table}[h]
+      \small
+    \centering
+    \caption{Comparison between state of the art 3D lane detection approaches and the GenLaneNet  trained with complex binary lane segmentation architecture on scenes with visual variations from sim3D, near range (0-40m) and far range (40-100m)}
+    \begin{tabular}{|p{0.29\linewidth}|p{0.09\linewidth}|p{0.09\linewidth}|p{0.09\linewidth}|p{0.09\linewidth}|p{0.09\linewidth}|p{0.09\linewidth}|}
+    \hline
+        \textbf{Method} & \textbf{AP} & \textbf{F-Score} & \textbf{x error near(m)} & \textbf{x error far(m)} & \textbf{z error near(m)} & \textbf{z error far(m)} \\ \hline
+        Gen-LaneNet & 87.2 & 85.3 & 0.074 & 0.538 & 0.015 & 0.232 \\ \hline
+        3D LaneNet & 74.9 & 72.5 & 0.115 & 0.601 & 0.032 & \textbf{0.230} \\ \hline
+        CLGo & 89.2 & 87.3 & 0.084 & \textbf{0.464} & 0.045 & 0.312 \\ \hline
+        3D-LaneNet(1/att) & 87.4 & 85.4 & 0.118 & 0.559 & 0.018 & 0.290 \\ \hline
+        Gen-LaneNet(1/att) & 88.5 & 86.8 & 0.104 & 0.544 & 0.016 & 0.294 \\ \hline
+        Gen-LaneNet(RESA+Res18) & \textbf{ 91.1} &\textbf{ 89.2} & 0.734 & 0.496 & \textbf{0.0134} & 0.259 \\ \hline
+        Gen-LaneNet(RESA+Res50) & 90.7 & 88.8 & \textbf{0.0653} & 0.477 & 0.014 & 0.258 \\ \hline
+    \end{tabular}
+\end{table}
+\end{frame}
+%%% Qualitative results
+\begin{frame}{Qualitative Results: Visual Variation Scenes}
+    \begin{figure}[h]
+      \caption{Qualitative results of the  GenLaneNet trained with complex binary lane segmentation architecture on visually varied scenes from sim3D dataset\footcite{guo2020gen} for uphill and downhill scenario. The ground-truth lines are color-coded in red and the predicted lanes in blue.}
+        \centering
+        % \begin{subfigure}{1\textwidth}
+        \includegraphics[width= 0.45\textwidth]{images/uphill_illus.png} 
+        \hfill
+        % \caption{\cite{guo2020gen}}
+        % \label{fig:subim1}
+        % \end{subfigure}
+        % \begin{subfigure}{1\textwidth}
+        \includegraphics[width= 0.45\textwidth]{images/downhill_illus.png}
+        % \caption{\cite{guo2020gen}}
+        % \label{fig:subim2}
+        % \end{subfigure}
+        \end{figure}
+\end{frame}
+
+%%%%%%%%%%%%% STAGE 2
+
+\begin{frame}{Stage 2: Anchor Less Semi-local 3D Lane Detection}
+     \begin{figure}[H]
+     \centering
+     
+%\begin{subfigure}{\textwidth}
+\includegraphics[width=0.8\linewidth, height=4.5cm]{images/3DlaneAUXNet.png} 
+\label{fig:subim1}
+%\end{subfigure}
+
+\caption{Dual stage semi-local anchor-less 3D lane detection pipeline }
+\label{fig:image2}
+\end{figure}
+\end{frame}
+
+\begin{frame}{Stage 2: Anchor Less Semi-local 3D Lane Detection}
+\begin{itemize}
+    \item Binary segmenation mask is transformed into birds-eye-view using perspective transformation.
+    \item Second stage consists of two pathways: regression and embedding pathway.
+    \item Regression pathway is responsible for extracting geometric information for 3D lane curves.
+    \item Embedding pathway is responsible for assigning clusters to the lane line points.
+    \item All the regressed geometric parameters are converted into 3D real world points and labels are assigned to them for visualization.
+\end{itemize}
+\end{frame}
+
+\begin{frame}{Regression Pathway}    
+    \begin{itemize}
+        \item The BEV segmentation mask is normalized.
+        \item Resulting BEV segmentation mask is decimated into grids $G_{WxH}$, which are non overlappig patches called tiles. 
+        \item Every tile contributes one point to the 3D lane curve.
+        \item For each tile we try to approximate a straight line segment assuming it intersects a tile.
+        \item 
+    \end{itemize}
+    
 \end{frame}
 \end{document}
