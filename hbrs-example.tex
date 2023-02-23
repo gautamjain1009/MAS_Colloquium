@@ -20,6 +20,7 @@
 %%%%
 \usepackage[style=authortitle,backend=bibtex]{biblatex}
 \addbibresource{bibliography.bib}
+\setbeamertemplate{caption}{\raggedright\insertcaption\par}
 %%%%
 
 \usepackage{theme/beamerthemehbrs}
@@ -834,16 +835,121 @@ the spatial size of the image tensors and $n_{c}$ represents the number of class
         \end{equation}
 \end{frame}
 
-\begin{frame}{Training Challenges Encountered: Proposed Pipeline }
-    
+\begin{frame}{Training Challenges Encountered: Proposed Pipeline (1/3)}
+    \begin{itemize}
+        \item While training for both pathways together, magnitude of loss from Regression pathway is relatively greater than the other one. 
+        \item Embedding pathway was not able to learn properly.
+        \item Overall loss: \textbf{Iteration 1}
+        \begin{equation}
+    Overall loss = L_{regression} + L_{embedding} 
+\end{equation}
+        \item Overall loss: \textbf{Iteration 2}
+        \begin{equation}
+    Overall loss = w_{regression} * L_{regression} + w_{embedding} * L_{embedding} 
+        \end{equation}
+        \item Both iterations did not work for combined training of both pathways.
+        \item Later both branches are learned independently. 
+        \item Network was able to learn meaningful information.
+    \end{itemize}
+        
+
+\end{frame}
+
+\begin{frame}{Training Challenges Encountered: Proposed Pipeline (2/3)}
+
+\begin{figure}[h]
+      
+        \centering
+        % \begin{subfigure}{\textwidth}
+        \includegraphics[width=0.4\linewidth, height=5cm]{images/activation_embededing_nofix.png} 
+        % \label{fig:subim1}
+        % \end{subfigure}
+        % \begin{subfigure}{\textwidth}
+        \includegraphics[width=0.4\linewidth,height=5cm]{images/embedding_regression_nofix.png}
+        \caption{Activation maps of convolutional layers (a) embedding pathway (b) regression pathway, while training them simultaneously}
+        % \caption{}
+        % \label{fig:subim2}
+        % \end{subfigure}
+        \end{figure}
+\end{frame}
+
+\begin{frame}{Training Challenges Encountered: Proposed Pipeline (3/3)}
+
+\begin{figure}[h]
+      
+        \centering
+        % \begin{subfigure}{\textwidth}
+        \includegraphics[width=0.4\linewidth, height=5cm]{images/activation_embedding.png} 
+        % \label{fig:subim1}
+        % \end{subfigure}
+        % \begin{subfigure}{\textwidth}
+        \includegraphics[width=0.4\linewidth,height=5cm]{images/activation_regression.png}
+        \caption{Activation maps of convolutional layers (a) embedding pathway (b) regression pathway, while training them independently}
+        % \caption{}
+        % \label{fig:subim2}
+        % \end{subfigure}
+        \end{figure}
 \end{frame}
 
 \begin{frame}{Problems: Proposed Pipeline}
-
-    
+    \begin{itemize}
+        \item Ground-truth for regressed geometric parameter were not computed properly.
+        \item 3D lane curves are traced back from the groundturth geometric parameters for all tiles in a scene using equation 13. 
+        \item Viusalization does not make any sense.
+        \item Correctness of the geometric parameters obtained by Hough Transform is validated for a single tile and visualized.
+        \item Later it is done for all the tiles and the lane curves are traced back.
+        \item To validate the speculation that the geometric parameters are calculated in the vicinity of tile itself, they are represented in terms of a global origin of the image using Hesse normal form.
+        \item Visualizations validated that the geometric parameters are computer correctly.
+    \end{itemize}
+\end{frame}
+%------------------
+\begin{frame}{Validating Hough Transform (1/2)}
+    \begin{figure}[h]
+      
+        \centering
+        % \begin{subfigure}{\textwidth}
+        \includegraphics[width=0.6\linewidth, height=6cm]{images/hough_validation.jpg} 
+        \caption{Validating Hough Transform and visualizing the detected lane segment from a single tile}
+        % \caption{}
+        % \label{fig:subim2}
+        % \end{subfigure}
+        \end{figure}
 \end{frame}
 
+\begin{frame}{Validating Hough Transform (2/2)}
+% \begin{figure}
+%    \includegraphics[scale=0.2]{images/detected_lines_r.jpg}
+%    \hfill
+%    \includegraphics[scale=0.2]{images/detected_lines_r.jpg}
+   
+% \end{figure}    
+
+\begin{figure}
+
+    \caption{(Left) Detected lanes via Hough Transform, (Right) Detected lanes via Hough Transform and using Hesse normal form as a post-processing step }
+   \includegraphics[width=0.3\textwidth, height=5cm]{images/detected_lines_r.jpg}
+   \hfill
+   \includegraphics[width=0.3\textwidth,height=5cm]{images/detected_lines_rprime.jpg}
+\end{figure}
+
+\end{frame}
+
+
+
 \begin{frame}{Future Work}
+
+\begin{itemize}
+
+    \item Solve the issue of representation of geometric 3D lane parameters.
+    \item Enable the approach to generalize well with different cameras.
+    \item Train the proposed approach with large-scale real-world datasets like OpenLane\footcite{chen2022persformer}.
+    \item Extend this approach towards an end-to-end driving policy, where 3D lane detection will be used as an auxiliary task.
+    \item Add more relatable auxiliary tasks like depth estimation, object detection.
+    \item Choose appropriate task loss balancing strategy.  
+
+
+
+\end{itemize}
     
 \end{frame}
 
